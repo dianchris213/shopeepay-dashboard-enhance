@@ -42,38 +42,38 @@ function setup() {
 describe("drag-to-scroll", () => {
   it("scrolls the strip while the left button is held down", () => {
     const { strip } = setup();
-    fireEvent.mouseDown(strip, { button: 0, pageX: 200 });
-    fireEvent.mouseMove(strip, { pageX: 140 });
+    fireEvent.mouseDown(strip, { button: 0, clientX: 200 });
+    fireEvent.mouseMove(strip, { clientX: 140 });
     expect(strip.scrollLeft).toBe(60);
-    fireEvent.mouseMove(strip, { pageX: 260 });
+    fireEvent.mouseMove(strip, { clientX: 260 });
     expect(strip.scrollLeft).toBe(-60);
     fireEvent.mouseUp(strip);
   });
 
   it("ignores movement when no button is held", () => {
     const { strip } = setup();
-    fireEvent.mouseMove(strip, { pageX: 40 });
+    fireEvent.mouseMove(strip, { clientX: 40 });
     expect(strip.scrollLeft).toBe(0);
   });
 
   it("ignores non-primary buttons", () => {
     const { strip } = setup();
-    fireEvent.mouseDown(strip, { button: 2, pageX: 200 });
-    fireEvent.mouseMove(strip, { pageX: 100 });
+    fireEvent.mouseDown(strip, { button: 2, clientX: 200 });
+    fireEvent.mouseMove(strip, { clientX: 100 });
     expect(strip.scrollLeft).toBe(0);
   });
 
   it("stops scrolling after mouseup and after the pointer leaves", () => {
     const { strip } = setup();
-    fireEvent.mouseDown(strip, { button: 0, pageX: 200 });
-    fireEvent.mouseMove(strip, { pageX: 180 });
+    fireEvent.mouseDown(strip, { button: 0, clientX: 200 });
+    fireEvent.mouseMove(strip, { clientX: 180 });
     fireEvent.mouseUp(strip);
-    fireEvent.mouseMove(strip, { pageX: 50 });
+    fireEvent.mouseMove(strip, { clientX: 50 });
     expect(strip.scrollLeft).toBe(20);
 
-    fireEvent.mouseDown(strip, { button: 0, pageX: 200 });
+    fireEvent.mouseDown(strip, { button: 0, clientX: 200 });
     fireEvent.mouseLeave(strip);
-    fireEvent.mouseMove(strip, { pageX: 50 });
+    fireEvent.mouseMove(strip, { clientX: 50 });
     expect(strip.scrollLeft).toBe(20);
   });
 
@@ -82,15 +82,15 @@ describe("drag-to-scroll", () => {
     const card = screen.getByRole("button", { name: "Card" });
 
     // A real drag (>3px) must not trigger the card action.
-    fireEvent.mouseDown(strip, { button: 0, pageX: 200 });
-    fireEvent.mouseMove(strip, { pageX: 120 });
+    fireEvent.mouseDown(strip, { button: 0, clientX: 200 });
+    fireEvent.mouseMove(strip, { clientX: 120 });
     fireEvent.mouseUp(strip);
     fireEvent.click(card);
     expect(clicks()).toBe(0);
 
     // A press without movement still counts as a click.
-    fireEvent.mouseDown(strip, { button: 0, pageX: 200 });
-    fireEvent.mouseMove(strip, { pageX: 201 });
+    fireEvent.mouseDown(strip, { button: 0, clientX: 200 });
+    fireEvent.mouseMove(strip, { clientX: 201 });
     fireEvent.mouseUp(strip);
     fireEvent.click(card);
     expect(clicks()).toBe(1);

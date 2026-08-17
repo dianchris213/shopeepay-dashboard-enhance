@@ -113,17 +113,23 @@ export function TopUpSheet({
   const [source, setSource] = useState(sources[0]!);
   const [done, setDone] = useState(false);
 
+  const accountsRef = useRef(accounts);
+  accountsRef.current = accounts;
+
+  // Reset only when the sheet opens: reacting to `accounts` would wipe the
+  // amount the user is typing whenever the store syncs.
   useEffect(() => {
     if (!open) return;
     setDigits("");
     setDone(false);
     setSource(sources[0]!);
+    const list = accountsRef.current;
     const preset =
-      presetAccountId && accounts.some((a) => a.id === presetAccountId)
+      presetAccountId && list.some((a) => a.id === presetAccountId)
         ? presetAccountId
-        : (accounts[0]?.id ?? "");
+        : (list[0]?.id ?? "");
     setAccountId(preset);
-  }, [open, accounts, presetAccountId]);
+  }, [open, presetAccountId]);
 
   const amount = Number(digits || 0);
   const valid = amount > 0 && !!accountId && !done;
