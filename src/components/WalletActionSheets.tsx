@@ -105,6 +105,7 @@ export function TopUpSheet({
   presetAccountId,
 }: Props & { presetAccountId?: string }) {
   const { accounts } = useFinance();
+  const money = useMoney();
   const { t, lang } = useT();
   const [digits, setDigits] = useState("");
   const [accountId, setAccountId] = useState("");
@@ -116,9 +117,10 @@ export function TopUpSheet({
     setDigits("");
     setDone(false);
     setSource(sources[0]!);
-    const preset = presetAccountId && accounts.some((a) => a.id === presetAccountId)
-      ? presetAccountId
-      : accounts[0]?.id ?? "";
+    const preset =
+      presetAccountId && accounts.some((a) => a.id === presetAccountId)
+        ? presetAccountId
+        : (accounts[0]?.id ?? "");
     setAccountId(preset);
   }, [open, accounts, presetAccountId]);
 
@@ -127,10 +129,26 @@ export function TopUpSheet({
 
   function submit() {
     if (!valid) return;
-    if (!reportMutation(topUpAccount(accountId, amount, source), "wallet", lang)) return;
+    const target = accounts.find((a) => a.id === accountId);
+    const result = topUpAccount(accountId, amount, source);
+    if (!result.ok) {
+      // reportMutation renders the precise reason; the title names the flow.
+      toast.error(
+        t("toast.topUpFailed"),
+        `${t("wa.topUpTitle")} · ${target?.name ?? ""}`.trim(),
+      );
+      reportMutation(result, "wallet", lang);
+      return;
+    }
+    const newBalance = (target?.amount ?? 0) + amount;
+    toast.success(
+      t("toast.topUpSuccess"),
+      `${money(amount)} ${t("toast.topUpSuccessBody")}: ${money(newBalance)}`,
+    );
     setDone(true);
     window.setTimeout(onClose, 520);
   }
+
 
   return (
     <Sheet open={open} onClose={onClose} title={t("wa.topUpTitle")}>
