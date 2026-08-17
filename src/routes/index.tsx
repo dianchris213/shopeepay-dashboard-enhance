@@ -23,6 +23,7 @@ import { AllTransactionsSheet } from "@/components/AllTransactionsSheet";
 import { ReserveSheet } from "@/components/ReserveSheet";
 import { BalanceBreakdownSheet } from "@/components/BalanceBreakdownSheet";
 import { ShopeePaySheet } from "@/components/ShopeePaySheet";
+import { TopUpSheet } from "@/components/WalletActionSheets";
 import { DueSoonAlert } from "@/components/DueSoonAlert";
 import { iconFor } from "@/lib/icon-map";
 import {
@@ -80,6 +81,7 @@ function Index() {
   const [breakdownOpen, setBreakdownOpen] = useState(false);
   const [stream, setStream] = useState<StreamKey | null>(null);
   const [shopeeOpen, setShopeeOpen] = useState(false);
+  const [topUpOpen, setTopUpOpen] = useState(false);
   const strip = useDragScroll<HTMLDivElement>();
 
   const { balance } = useMemo(() => totals(state), [state]);
@@ -269,7 +271,7 @@ function Index() {
               ref={strip.ref}
               {...strip.dragProps}
               data-testid="stream-strip"
-              className="scroll-slim-x -mx-1 mt-2 flex w-full cursor-grab snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-1.5 active:cursor-grabbing"
+              className="scroll-slim-x -mx-1 mt-2 flex w-full cursor-grab snap-x snap-mandatory items-stretch gap-2.5 overflow-x-auto px-1 pt-0.5 pb-2 active:cursor-grabbing"
             >
               {walletCards.map((card) => (
                 <button
@@ -280,13 +282,13 @@ function Index() {
                   }}
                   data-testid={card.testId}
                   aria-label={`${card.label}: ${money(card.amount)}`}
-                  className="glass tap hover:bg-foreground/10 min-w-[132px] shrink-0 snap-start rounded-2xl px-3 py-2 text-left transition-transform hover:scale-[1.03] active:scale-95"
+                  className="glass tap border-foreground/10 hover:border-foreground/20 hover:bg-foreground/10 flex h-[62px] min-w-[136px] shrink-0 snap-start flex-col justify-between rounded-2xl border px-3.5 py-2.5 text-left transition-all duration-300 hover:scale-[1.03] active:scale-95"
                 >
-                  <p className="text-muted-foreground truncate text-[9px] tracking-wide uppercase">
+                  <p className="text-muted-foreground truncate text-[9px] font-medium tracking-wider uppercase">
                     {card.label}
                   </p>
                   <p
-                    className={`mt-0.5 truncate text-sm font-semibold tabular-nums ${
+                    className={`truncate text-sm font-semibold tabular-nums ${
                       card.amount < 0 ? "text-expense" : "text-income"
                     }`}
                   >
@@ -294,6 +296,20 @@ function Index() {
                   </p>
                 </button>
               ))}
+
+              {/* Compact "Isi Uang" action card, always last in the strip. */}
+              <button
+                onClick={() => {
+                  if (strip.didDrag()) return;
+                  setTopUpOpen(true);
+                }}
+                data-testid="stream-card-topup"
+                aria-label={t("wl.topUpCta")}
+                className="glass tap border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary flex h-[62px] min-w-[112px] shrink-0 snap-start flex-col items-center justify-center gap-1 rounded-2xl border border-dashed transition-all duration-300 hover:scale-[1.03] active:scale-95"
+              >
+                <Plus className="size-4" strokeWidth={2.2} />
+                <span className="text-[10px] font-semibold tracking-wide">{t("wl.topUpCta")}</span>
+              </button>
             </div>
           </section>
         </WidgetErrorBoundary>
@@ -461,6 +477,7 @@ function Index() {
         stream={stream}
         {...(stream === "custom" ? { title: customName } : {})}
       />
+      <TopUpSheet open={topUpOpen} onClose={() => setTopUpOpen(false)} />
       <ShopeePaySheet open={shopeeOpen} onClose={() => setShopeeOpen(false)} />
       <WAExportPreviewSheet open={exportOpen} onClose={() => setExportOpen(false)} />
       <NotificationsDrawer open={alertsOpen} onClose={() => setAlertsOpen(false)} />
