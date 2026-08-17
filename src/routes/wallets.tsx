@@ -84,6 +84,16 @@ function Wallets() {
         <p className="text-muted-foreground mt-3 text-[11px]">
           {t("wallets.across").replace("{n}", String(accounts.length))}
         </p>
+
+        {/* Primary call to action: top up any wallet straight from the hero. */}
+        <button
+          onClick={() => setSheet("topup")}
+          data-testid="wallets-topup-cta"
+          className="bg-primary text-primary-foreground shadow-primary/25 tap mt-5 flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold shadow-[0_0_20px] transition-all duration-300 hover:brightness-110 active:scale-[0.98]"
+        >
+          <PlusCircle className="size-[18px]" strokeWidth={2} />
+          {t("wl.topUpCta")}
+        </button>
       </section>
 
       <section className="mt-6">
