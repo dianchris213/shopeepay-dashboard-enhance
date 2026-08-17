@@ -183,6 +183,7 @@ export function AddTransactionSheet({ open, onClose }: Props) {
 
   /** Switching the tab re-evaluates the category default. */
   function selectKind(nextKind: "expense" | "income") {
+    if (nextKind === kind) return;
     setKind(nextKind);
     setWalletId(defaultWalletFor(nextKind));
     setCategoryId(null);
@@ -191,6 +192,9 @@ export function AddTransactionSheet({ open, onClose }: Props) {
 
   /** Switching the wallet re-evaluates the category default. */
   function selectWallet(nextWalletId: string) {
+    // Re-picking the active wallet is a no-op: clearing here would drop the
+    // computed default without re-running the defaults effect.
+    if (nextWalletId === walletId) return;
     setWalletId(nextWalletId);
     setCategoryId(null);
     lastDefaults.current = null;
