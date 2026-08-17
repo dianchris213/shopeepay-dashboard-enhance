@@ -99,7 +99,11 @@ export function TransferSheet({ open, onClose }: Props) {
 
 const sources = ["Bank Transfer", "Debit Card", "Cash Deposit"];
 
-export function TopUpSheet({ open, onClose }: Props) {
+export function TopUpSheet({
+  open,
+  onClose,
+  presetAccountId,
+}: Props & { presetAccountId?: string }) {
   const { accounts } = useFinance();
   const { t, lang } = useT();
   const [digits, setDigits] = useState("");
@@ -112,8 +116,11 @@ export function TopUpSheet({ open, onClose }: Props) {
     setDigits("");
     setDone(false);
     setSource(sources[0]!);
-    setAccountId(accounts[0]?.id ?? "");
-  }, [open, accounts]);
+    const preset = presetAccountId && accounts.some((a) => a.id === presetAccountId)
+      ? presetAccountId
+      : accounts[0]?.id ?? "";
+    setAccountId(preset);
+  }, [open, accounts, presetAccountId]);
 
   const amount = Number(digits || 0);
   const valid = amount > 0 && !!accountId && !done;

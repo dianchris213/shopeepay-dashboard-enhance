@@ -205,6 +205,30 @@
   &::-webkit-scrollbar-track {
     background: transparent;
   }
+
+  /* Desktop (mouse) users get a slightly larger, always-visible track so the
+     strip clearly reads as scrollable. Touch devices keep the slim styling. */
+  @media (pointer: fine) {
+    scrollbar-color: oklch(1 0 0 / 32%) oklch(1 0 0 / 8%);
+
+    &::-webkit-scrollbar {
+      height: 7px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: oklch(1 0 0 / 8%);
+      border-radius: 999px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: oklch(1 0 0 / 32%);
+      transition: background 0.3s ease;
+    }
+
+    &:hover::-webkit-scrollbar-thumb {
+      background: oklch(1 0 0 / 48%);
+    }
+  }
 }
 
 
