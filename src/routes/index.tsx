@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type KeyboardEvent } from "react";
 import {
   AlertTriangle,
   ArrowDownLeft,
@@ -96,7 +96,7 @@ function Index() {
   }
 
   /** Left/Right arrows move focus between wallet cards; Home/End jump to the edges. */
-  function onStripKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+  function onStripKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     const keys = ["ArrowRight", "ArrowLeft", "Home", "End"];
     if (!keys.includes(event.key)) return;
     const cards = Array.from(
