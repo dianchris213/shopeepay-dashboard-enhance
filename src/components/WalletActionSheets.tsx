@@ -14,6 +14,7 @@ import {
 } from "@/lib/finance-store";
 import { reportMutation } from "@/lib/mutation-feedback";
 import { useT } from "@/lib/i18n";
+import { toast } from "@/lib/toast-store";
 
 type Props = { open: boolean; onClose: () => void };
 
