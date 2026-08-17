@@ -104,13 +104,17 @@ export function ManageWalletsSheet({ open, onClose }: Props) {
                 >
                   <Pencil className="size-4" strokeWidth={1.8} />
                 </button>
-                <button
-                  onClick={() => setPendingDelete(account.id)}
-                  aria-label={`Delete ${account.name}`}
-                  className="tap glass text-muted-foreground hover:text-expense grid size-9 shrink-0 place-items-center rounded-full"
-                >
-                  <Trash2 className="size-4" strokeWidth={1.8} />
-                </button>
+                {/* The Shopeepay wallet is a core account and can never be deleted. */}
+                {!isProtected(account) && (
+                  <button
+                    onClick={() => setPendingDelete(account.id)}
+                    aria-label={`Delete ${account.name}`}
+                    className="tap glass text-muted-foreground hover:text-expense grid size-9 shrink-0 place-items-center rounded-full"
+                  >
+                    <Trash2 className="size-4" strokeWidth={1.8} />
+                  </button>
+                )}
+
               </li>
             );
           })}
