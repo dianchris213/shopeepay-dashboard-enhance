@@ -14,6 +14,7 @@ import {
   addTransaction,
   cashAccount,
   codOverflowFor,
+  DEFAULT_CUSTOM_WALLET_NAME,
   deleteTransaction,
   formatAmount,
   getState,
