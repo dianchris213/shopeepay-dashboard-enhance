@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check } from "lucide-react";
 
 import { AmountField, Chip, PrimaryButton, Sheet } from "@/components/Sheet";
