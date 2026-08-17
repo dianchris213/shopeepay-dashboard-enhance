@@ -28,7 +28,7 @@ const cash: Account = {
 };
 
 async function typeAmount(user: ReturnType<typeof userEvent.setup>, value: string) {
-  const field = screen.getByLabelText(/Amount in rupiah/i);
+  const field = screen.getByLabelText(/^Amount$/i);
   await user.type(field, value);
 }
 
@@ -44,7 +44,7 @@ describe("TopUpSheet (Isi Uang)", () => {
     render(<TopUpSheet open onClose={() => {}} />);
     await screen.findByRole("dialog");
 
-    const confirm = screen.getByRole("button", { name: /Top Up Now|Isi Saldo Sekarang|Isi Uang/i });
+    const confirm = screen.getByRole("button", { name: /Confirm Top Up|Konfirmasi Isi Ulang/i });
     expect(confirm).toBeDisabled();
 
     await typeAmount(user, "50000");
@@ -57,7 +57,7 @@ describe("TopUpSheet (Isi Uang)", () => {
     await screen.findByRole("dialog");
 
     await typeAmount(user, "75000");
-    await user.click(screen.getByRole("button", { name: /Top Up Now|Isi Saldo Sekarang|Isi Uang/i }));
+    await user.click(screen.getByRole("button", { name: /Confirm Top Up|Konfirmasi Isi Ulang/i }));
 
     await waitFor(() => expect(getToasts().length).toBeGreaterThan(0));
     const toast = getToasts().at(-1)!;
@@ -76,7 +76,7 @@ describe("TopUpSheet (Isi Uang)", () => {
     await screen.findByRole("dialog");
 
     await typeAmount(user, "20000");
-    await user.click(screen.getByRole("button", { name: /Top Up Now|Isi Saldo Sekarang|Isi Uang/i }));
+    await user.click(screen.getByRole("button", { name: /Confirm Top Up|Konfirmasi Isi Ulang/i }));
 
     await waitFor(() =>
       expect(getState().accounts.find((a) => a.id === shopee.id)!.amount).toBe(20_000),
@@ -91,7 +91,7 @@ describe("TopUpSheet (Isi Uang)", () => {
 
     await user.click(screen.getByRole("button", { name: shopee.name }));
     await typeAmount(user, "30000");
-    await user.click(screen.getByRole("button", { name: /Top Up Now|Isi Saldo Sekarang|Isi Uang/i }));
+    await user.click(screen.getByRole("button", { name: /Confirm Top Up|Konfirmasi Isi Ulang/i }));
 
     await waitFor(() =>
       expect(getState().accounts.find((a) => a.id === shopee.id)!.amount).toBe(30_000),
@@ -108,7 +108,7 @@ describe("TopUpSheet (Isi Uang)", () => {
     // The destination disappears (deleted elsewhere) right before confirming.
     hydrateState({ ...getState(), accounts: getState().accounts.filter((a) => a.id !== cash.id) });
     clearToasts();
-    await user.click(screen.getByRole("button", { name: /Top Up Now|Isi Saldo Sekarang|Isi Uang/i }));
+    await user.click(screen.getByRole("button", { name: /Confirm Top Up|Konfirmasi Isi Ulang/i }));
 
     await waitFor(() => expect(getToasts().length).toBeGreaterThan(0));
     expect(getToasts().some((t) => t.tone === "error")).toBe(true);

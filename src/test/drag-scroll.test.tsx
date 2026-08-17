@@ -27,8 +27,15 @@ function setup() {
   let clicks = 0;
   render(<Strip onSelect={() => (clicks += 1)} />);
   const strip = screen.getByTestId("strip");
-  // jsdom has no layout, so scrollLeft is writable but starts at 0.
-  strip.scrollLeft = 0;
+  // jsdom has no layout: scrollLeft is a read-only 0, so back it with a field.
+  let scrollLeft = 0;
+  Object.defineProperty(strip, "scrollLeft", {
+    configurable: true,
+    get: () => scrollLeft,
+    set: (value: number) => {
+      scrollLeft = value;
+    },
+  });
   return { strip, clicks: () => clicks };
 }
 
