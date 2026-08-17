@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check } from "lucide-react";
 
 import { AmountField, Chip, PrimaryButton, Sheet } from "@/components/Sheet";
@@ -14,6 +14,7 @@ import {
 } from "@/lib/finance-store";
 import { reportMutation } from "@/lib/mutation-feedback";
 import { useT } from "@/lib/i18n";
+import { toast } from "@/lib/toast-store";
 
 type Props = { open: boolean; onClose: () => void };
 
@@ -105,32 +106,56 @@ export function TopUpSheet({
   presetAccountId,
 }: Props & { presetAccountId?: string }) {
   const { accounts } = useFinance();
+  const money = useMoney();
   const { t, lang } = useT();
   const [digits, setDigits] = useState("");
   const [accountId, setAccountId] = useState("");
   const [source, setSource] = useState(sources[0]!);
   const [done, setDone] = useState(false);
 
+  const accountsRef = useRef(accounts);
+  accountsRef.current = accounts;
+
+  // Reset only when the sheet opens: reacting to `accounts` would wipe the
+  // amount the user is typing whenever the store syncs.
   useEffect(() => {
     if (!open) return;
     setDigits("");
     setDone(false);
     setSource(sources[0]!);
-    const preset = presetAccountId && accounts.some((a) => a.id === presetAccountId)
-      ? presetAccountId
-      : accounts[0]?.id ?? "";
+    const list = accountsRef.current;
+    const preset =
+      presetAccountId && list.some((a) => a.id === presetAccountId)
+        ? presetAccountId
+        : (list[0]?.id ?? "");
     setAccountId(preset);
-  }, [open, accounts, presetAccountId]);
+  }, [open, presetAccountId]);
 
   const amount = Number(digits || 0);
   const valid = amount > 0 && !!accountId && !done;
 
   function submit() {
     if (!valid) return;
-    if (!reportMutation(topUpAccount(accountId, amount, source), "wallet", lang)) return;
+    const target = accounts.find((a) => a.id === accountId);
+    const result = topUpAccount(accountId, amount, source);
+    if (!result.ok) {
+      // reportMutation renders the precise reason; the title names the flow.
+      toast.error(
+        t("toast.topUpFailed"),
+        `${t("wa.topUpTitle")} · ${target?.name ?? ""}`.trim(),
+      );
+      reportMutation(result, "wallet", lang);
+      return;
+    }
+    const newBalance = (target?.amount ?? 0) + amount;
+    toast.success(
+      t("toast.topUpSuccess"),
+      `${money(amount)} ${t("toast.topUpSuccessBody")}: ${money(newBalance)}`,
+    );
     setDone(true);
     window.setTimeout(onClose, 520);
   }
+
 
   return (
     <Sheet open={open} onClose={onClose} title={t("wa.topUpTitle")}>

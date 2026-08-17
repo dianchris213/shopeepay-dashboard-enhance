@@ -21,6 +21,10 @@ type Props = { open: boolean; onClose: () => void };
 
 const types: AccountType[] = ["Bank Account", "E-Wallet", "Cash", "Custom"];
 
+/** Core wallets the user must never delete (the persistent Shopeepay account). */
+const isProtected = (account: Account) =>
+  account.type === "Driver" || account.name.replaceAll(/\s/g, "").toLowerCase() === "shopeepay";
+
 export function ManageWalletsSheet({ open, onClose }: Props) {
   const { accounts } = useFinance();
   const money = useMoney();
@@ -104,13 +108,17 @@ export function ManageWalletsSheet({ open, onClose }: Props) {
                 >
                   <Pencil className="size-4" strokeWidth={1.8} />
                 </button>
-                <button
-                  onClick={() => setPendingDelete(account.id)}
-                  aria-label={`Delete ${account.name}`}
-                  className="tap glass text-muted-foreground hover:text-expense grid size-9 shrink-0 place-items-center rounded-full"
-                >
-                  <Trash2 className="size-4" strokeWidth={1.8} />
-                </button>
+                {/* The Shopeepay wallet is a core account and can never be deleted. */}
+                {!isProtected(account) && (
+                  <button
+                    onClick={() => setPendingDelete(account.id)}
+                    aria-label={`Delete ${account.name}`}
+                    className="tap glass text-muted-foreground hover:text-expense grid size-9 shrink-0 place-items-center rounded-full"
+                  >
+                    <Trash2 className="size-4" strokeWidth={1.8} />
+                  </button>
+                )}
+
               </li>
             );
           })}
@@ -206,7 +214,7 @@ export function ManageWalletsSheet({ open, onClose }: Props) {
         confirmLabel={t("mw.deleteConfirm")}
         onCancel={() => setPendingDelete(null)}
         onConfirm={() => {
-          if (!deleting) return;
+          if (!deleting || isProtected(deleting)) return;
           deleteAccount(deleting.id);
           toast.success(t("toast.walletDeleted"));
           setPendingDelete(null);

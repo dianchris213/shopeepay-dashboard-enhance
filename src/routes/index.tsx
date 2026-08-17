@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type KeyboardEvent } from "react";
 import {
   AlertTriangle,
   ArrowDownLeft,
@@ -8,6 +8,7 @@ import {
   Check,
   ChevronRight,
   Plus,
+  RefreshCw,
   Repeat,
   Share2,
   Shield,
@@ -47,6 +48,8 @@ import {
 import { WAExportPreviewSheet } from "@/components/WAExportPreviewSheet";
 import { ShopeeInclusionBadge } from "@/components/ShopeeInclusionBadge";
 import { useT } from "@/lib/i18n";
+import { refreshWallets, useWalletsRefreshing } from "@/lib/wallet-refresh";
+import { toast } from "@/lib/toast-store";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -83,6 +86,35 @@ function Index() {
   const [shopeeOpen, setShopeeOpen] = useState(false);
   const [topUpOpen, setTopUpOpen] = useState(false);
   const strip = useDragScroll<HTMLDivElement>();
+  const refreshing = useWalletsRefreshing();
+
+  /** Manual "Refresh balances": re-pulls Driver Shopee + Shopeepay from cloud. */
+  async function onRefreshWallets() {
+    const ok = await refreshWallets();
+    if (ok) toast.success(t("wl.refreshed"), t("wl.refreshedBody"));
+    else toast.error(t("wl.refreshFailed"), t("wl.refreshFailedBody"));
+  }
+
+  /** Left/Right arrows move focus between wallet cards; Home/End jump to the edges. */
+  function onStripKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    const keys = ["ArrowRight", "ArrowLeft", "Home", "End"];
+    if (!keys.includes(event.key)) return;
+    const cards = Array.from(
+      event.currentTarget.querySelectorAll<HTMLButtonElement>("[data-wallet-card]"),
+    );
+    if (cards.length === 0) return;
+    const index = cards.indexOf(document.activeElement as HTMLButtonElement);
+    const next =
+      event.key === "Home"
+        ? 0
+        : event.key === "End"
+          ? cards.length - 1
+          : index < 0
+            ? 0
+            : (index + (event.key === "ArrowRight" ? 1 : -1) + cards.length) % cards.length;
+    event.preventDefault();
+    cards[next]?.focus();
+  }
 
   const { balance } = useMemo(() => totals(state), [state]);
   // Home boxes show today's activity only, excluding the specialised streams.
@@ -266,51 +298,91 @@ function Index() {
               {t("home.net")} {income - expense < 0 ? "−" : "+"} {money(Math.abs(income - expense))}
             </p>
 
-            {/* Swipeable wallet strip — drag with a mouse on desktop, swipe on touch. */}
+            {/* Wallet strip header: label + manual balance refresh. */}
+            <div className="mt-2 flex items-center justify-between">
+              <p className="text-muted-foreground text-[10px] tracking-widest uppercase">
+                {t("nav.wallets")}
+              </p>
+              <button
+                type="button"
+                onClick={onRefreshWallets}
+                disabled={refreshing}
+                data-testid="wallet-refresh"
+                aria-label={t("wl.refresh")}
+                title={t("wl.refresh")}
+                className="glass tap focus-visible:ring-primary/60 text-muted-foreground hover:text-foreground grid size-8 place-items-center rounded-full transition-colors duration-200 focus-visible:ring-2 focus-visible:outline-none disabled:opacity-60"
+              >
+                <RefreshCw
+                  className={`size-3.5 ${refreshing ? "animate-spin" : ""}`}
+                  strokeWidth={2}
+                />
+              </button>
+            </div>
+
+            {/* Swipeable wallet strip — drag with a mouse on desktop, swipe on
+                touch, Tab + Left/Right arrows on a keyboard. */}
             <div
               ref={strip.ref}
               {...strip.dragProps}
+              onKeyDown={onStripKeyDown}
+              role="group"
+              aria-label={t("nav.wallets")}
+              aria-busy={refreshing}
               data-testid="stream-strip"
-              className="scroll-slim-x -mx-1 mt-2 flex w-full cursor-grab snap-x snap-mandatory items-stretch gap-2.5 overflow-x-auto px-1 pt-0.5 pb-2 active:cursor-grabbing"
+              className="scroll-slim-x -mx-1 mt-1 flex w-full cursor-grab snap-x snap-mandatory items-stretch gap-2.5 overflow-x-auto px-1 pt-0.5 pb-2 active:cursor-grabbing"
             >
-              {walletCards.map((card) => (
-                <button
-                  key={card.id}
-                  onClick={() => {
-                    if (strip.didDrag()) return;
-                    card.onClick();
-                  }}
-                  data-testid={card.testId}
-                  aria-label={`${card.label}: ${money(card.amount)}`}
-                  className="glass tap border-foreground/10 hover:border-foreground/20 hover:bg-foreground/10 flex h-[62px] min-w-[136px] shrink-0 snap-start flex-col justify-between rounded-2xl border px-3.5 py-2.5 text-left transition-all duration-300 hover:scale-[1.03] active:scale-95"
-                >
-                  <p className="text-muted-foreground truncate text-[9px] font-medium tracking-wider uppercase">
-                    {card.label}
-                  </p>
-                  <p
-                    className={`truncate text-sm font-semibold tabular-nums ${
-                      card.amount < 0 ? "text-expense" : "text-income"
-                    }`}
-                  >
-                    {money(card.amount)}
-                  </p>
-                </button>
-              ))}
+              {refreshing
+                ? walletCards.map((card) => (
+                    <div
+                      key={card.id}
+                      data-testid="wallet-card-skeleton"
+                      className="glass border-foreground/10 h-[62px] min-w-[136px] shrink-0 animate-pulse rounded-2xl border px-3.5 py-2.5"
+                    >
+                      <div className="bg-foreground/10 h-2 w-2/3 rounded-full" />
+                      <div className="bg-foreground/10 mt-3 h-3 w-1/2 rounded-full" />
+                    </div>
+                  ))
+                : walletCards.map((card) => (
+                    <button
+                      key={card.id}
+                      data-wallet-card=""
+                      onClick={() => {
+                        if (strip.didDrag()) return;
+                        card.onClick();
+                      }}
+                      data-testid={card.testId}
+                      aria-label={`${card.label}: ${money(card.amount)}`}
+                      className="glass tap border-foreground/10 hover:border-foreground/20 hover:bg-foreground/10 focus-visible:ring-primary/60 flex h-[62px] min-w-[136px] shrink-0 snap-start flex-col justify-between rounded-2xl border px-3.5 py-2.5 text-left transition-all duration-300 hover:scale-[1.03] focus-visible:ring-2 focus-visible:outline-none active:scale-95"
+                    >
+                      <p className="text-muted-foreground truncate text-[9px] font-medium tracking-wider uppercase">
+                        {card.label}
+                      </p>
+                      <p
+                        className={`truncate text-sm font-semibold tabular-nums ${
+                          card.amount < 0 ? "text-expense" : "text-income"
+                        }`}
+                      >
+                        {money(card.amount)}
+                      </p>
+                    </button>
+                  ))}
 
               {/* Compact "Isi Uang" action card, always last in the strip. */}
               <button
+                data-wallet-card=""
                 onClick={() => {
                   if (strip.didDrag()) return;
                   setTopUpOpen(true);
                 }}
                 data-testid="stream-card-topup"
                 aria-label={t("wl.topUpCta")}
-                className="glass tap border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary flex h-[62px] min-w-[112px] shrink-0 snap-start flex-col items-center justify-center gap-1 rounded-2xl border border-dashed transition-all duration-300 hover:scale-[1.03] active:scale-95"
+                className="glass tap border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary focus-visible:ring-primary/60 flex h-[62px] min-w-[112px] shrink-0 snap-start flex-col items-center justify-center gap-1 rounded-2xl border border-dashed transition-all duration-300 hover:scale-[1.03] focus-visible:ring-2 focus-visible:outline-none active:scale-95"
               >
                 <Plus className="size-4" strokeWidth={2.2} />
                 <span className="text-[10px] font-semibold tracking-wide">{t("wl.topUpCta")}</span>
               </button>
             </div>
+
           </section>
         </WidgetErrorBoundary>
 

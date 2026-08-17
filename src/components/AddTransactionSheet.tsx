@@ -14,6 +14,7 @@ import {
   addTransaction,
   cashAccount,
   codOverflowFor,
+  DEFAULT_CUSTOM_WALLET_NAME,
   deleteTransaction,
   formatAmount,
   getState,
@@ -81,12 +82,26 @@ export function AddTransactionSheet({ open, onClose }: Props) {
 
   useEffect(() => () => timers.current.forEach(window.clearTimeout), []);
 
+  /**
+   * Default wallet sources when the form opens: Shopeepay for Income (driver
+   * earnings land there) and Dana Custom for Expense.
+   */
+  const defaultWalletFor = (nextKind: "expense" | "income") => {
+    const shopee = accounts.find((a) => isShopeePayWallet(a)) ?? null;
+    const custom =
+      accounts.find((a) => a.name === DEFAULT_CUSTOM_WALLET_NAME) ??
+      accounts.find((a) => a.type === "Custom") ??
+      null;
+    const preferred = nextKind === "income" ? (shopee ?? custom) : (custom ?? shopee);
+    return preferred?.id ?? null;
+  };
+
   useEffect(() => {
     if (!open) return;
     setKind("expense");
     setDigits("");
     setCategoryId(null);
-    setWalletId(null);
+    setWalletId(defaultWalletFor("expense"));
     setNote("");
     setDate(todayISO());
     setSaved(false);
@@ -168,13 +183,18 @@ export function AddTransactionSheet({ open, onClose }: Props) {
 
   /** Switching the tab re-evaluates the category default. */
   function selectKind(nextKind: "expense" | "income") {
+    if (nextKind === kind) return;
     setKind(nextKind);
+    setWalletId(defaultWalletFor(nextKind));
     setCategoryId(null);
     lastDefaults.current = null;
   }
 
   /** Switching the wallet re-evaluates the category default. */
   function selectWallet(nextWalletId: string) {
+    // Re-picking the active wallet is a no-op: clearing here would drop the
+    // computed default without re-running the defaults effect.
+    if (nextWalletId === walletId) return;
     setWalletId(nextWalletId);
     setCategoryId(null);
     lastDefaults.current = null;
