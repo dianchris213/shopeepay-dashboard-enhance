@@ -8,6 +8,7 @@ import {
   Check,
   ChevronRight,
   Plus,
+  RefreshCw,
   Repeat,
   Share2,
   Shield,
@@ -47,6 +48,8 @@ import {
 import { WAExportPreviewSheet } from "@/components/WAExportPreviewSheet";
 import { ShopeeInclusionBadge } from "@/components/ShopeeInclusionBadge";
 import { useT } from "@/lib/i18n";
+import { refreshWallets, useWalletsRefreshing } from "@/lib/wallet-refresh";
+import { toast } from "@/lib/toast-store";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -83,6 +86,35 @@ function Index() {
   const [shopeeOpen, setShopeeOpen] = useState(false);
   const [topUpOpen, setTopUpOpen] = useState(false);
   const strip = useDragScroll<HTMLDivElement>();
+  const refreshing = useWalletsRefreshing();
+
+  /** Manual "Refresh balances": re-pulls Driver Shopee + Shopeepay from cloud. */
+  async function onRefreshWallets() {
+    const ok = await refreshWallets();
+    if (ok) toast.success(t("wl.refreshed"), t("wl.refreshedBody"));
+    else toast.error(t("wl.refreshFailed"), t("wl.refreshFailedBody"));
+  }
+
+  /** Left/Right arrows move focus between wallet cards; Home/End jump to the edges. */
+  function onStripKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    const keys = ["ArrowRight", "ArrowLeft", "Home", "End"];
+    if (!keys.includes(event.key)) return;
+    const cards = Array.from(
+      event.currentTarget.querySelectorAll<HTMLButtonElement>("[data-wallet-card]"),
+    );
+    if (cards.length === 0) return;
+    const index = cards.indexOf(document.activeElement as HTMLButtonElement);
+    const next =
+      event.key === "Home"
+        ? 0
+        : event.key === "End"
+          ? cards.length - 1
+          : index < 0
+            ? 0
+            : (index + (event.key === "ArrowRight" ? 1 : -1) + cards.length) % cards.length;
+    event.preventDefault();
+    cards[next]?.focus();
+  }
 
   const { balance } = useMemo(() => totals(state), [state]);
   // Home boxes show today's activity only, excluding the specialised streams.
